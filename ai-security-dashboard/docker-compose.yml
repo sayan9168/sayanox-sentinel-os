@@ -9,10 +9,22 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///security_dashboard.db
+      - DATABASE_URL=sqlite:///data/security_dashboard.db
+      - JWT_SECRET_KEY=your-super-secret-key-change-in-production-abc123xyz789
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
     volumes:
       - ./backend:/app
       - db_data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    cap_add:
+      - SYS_PTRACE
+      - NET_ADMIN
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
     networks:
       - ai-network
     restart: unless-stopped
