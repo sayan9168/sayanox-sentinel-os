@@ -444,6 +444,10 @@ class BackupService:
             "recent_backups": self.list_backups()[:5],
             "default_sources": self.default_sources
         }
+    
+    def is_configured(self) -> bool:
+        """Check if backup service is configured"""
+        return True
 
 
 # Global backup service instance

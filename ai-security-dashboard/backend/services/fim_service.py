@@ -363,6 +363,10 @@ class FileIntegrityMonitor:
             'alerts_count': len(self.alerts),
             'recent_alerts': self.get_alerts(limit=10)
         }
+    
+    def is_running(self) -> bool:
+        """Check if FIM service is running"""
+        return self._running
 
 
 # Global FIM instance

@@ -166,6 +166,7 @@ async def test_all_notifications(
 @router.post("/alert/resource")
 @limiter.limit("10/minute")
 async def send_resource_alert(
+    request,
     alert_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
@@ -184,6 +185,7 @@ async def send_resource_alert(
 @router.post("/alert/threat")
 @limiter.limit("10/minute")
 async def send_threat_alert(
+    request,
     alert_data: dict,
     current_user: dict = Depends(get_current_user)
 ):

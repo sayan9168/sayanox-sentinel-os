@@ -402,6 +402,10 @@ class AutonomousRemediationEngine:
             "failed_actions": failed,
             "recent_executions": self.get_execution_log(limit=10)
         }
+    
+    def is_enabled(self) -> bool:
+        """Check if remediation engine is active"""
+        return self._running or len(self.rules) > 0
 
 
 # Global remediation engine instance
