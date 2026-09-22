@@ -1,7 +1,7 @@
 """
 AI-Powered System Resource & Security Intelligence Dashboard
-Enterprise-Grade Autonomous PC Operations Suite
-Backend Main Application - FastAPI with WebSocket streaming, JWT auth, and system control
+Enterprise-Grade Autonomous PC Operations Suite - Phase 3
+Backend Main Application - FastAPI with WebSocket streaming, JWT auth, FIM, and autonomous remediation
 """
 
 import asyncio
@@ -24,7 +24,10 @@ from backend.services.database import DatabaseManager
 from backend.services.system_control import system_controller
 from backend.services.browser_automation import browser_automation
 from backend.services.notification_service import notification_service, configure_notifications
-from backend.routers import metrics, threats, skills, auth, system, browser, notifications
+from backend.services.fim_service import fim_service, configure_fim
+from backend.services.remediation_engine import remediation_engine, configure_remediation
+from backend.services.backup_service import backup_service, configure_backup
+from backend.routers import metrics, threats, skills, auth, system, browser, notifications, fim, remediation, backup
 from backend.middleware.security import limiter, rate_limit_exceeded_handler, audit_logger
 
 # Configure logging
@@ -60,6 +63,23 @@ async def lifespan(app: FastAPI):
     connection_manager["scraper_task"] = scraper_task
     connection_manager["db_manager"] = db_manager
     
+    # Configure FIM (File Integrity Monitoring)
+    configure_fim(
+        db_manager=db_manager,
+        notification_service=notification_service,
+        critical_paths=["/etc", "/usr/bin", "./backend", "./frontend"]
+    )
+    
+    # Configure Remediation Engine
+    configure_remediation(
+        system_controller=system_controller,
+        notification_service=notification_service,
+        db_manager=db_manager
+    )
+    
+    # Configure Backup Service
+    configure_backup(backup_dir="./backup")
+    
     # Configure default notifications (can be overridden via API)
     configure_notifications(
         channels=["discord"]  # Default to discord if configured
@@ -81,6 +101,9 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     
+    # Stop FIM
+    fim_service.stop()
+    
     # Close browser automation
     await browser_automation.stop()
     
@@ -95,7 +118,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Autonomous PC Operations & Security Intelligence Suite",
     description="""
-## Enterprise-Grade AI Security Dashboard
+## Enterprise-Grade AI Security Dashboard - Phase 3
 
 Full-stack autonomous system with:
 - **Real-time system monitoring** via WebSockets
@@ -106,12 +129,15 @@ Full-stack autonomous system with:
 - **Multi-channel alerts** (Telegram, Discord, Slack)
 - **JWT authentication** with RBAC (Admin/Viewer roles)
 - **Audit logging** for all security events
+- **File Integrity Monitoring (FIM)** for critical files
+- **Autonomous Remediation Engine** for automatic threat response
+- **Backup & Sync** with cloud support (S3, GCS, Azure, SFTP)
 
 ### Default Credentials
 - Admin: `admin` / `admin123`
 - Viewer: `viewer` / `viewer123`
     """,
-    version="2.0.0",
+    version="3.0.0",
     lifespan=lifespan
 )
 

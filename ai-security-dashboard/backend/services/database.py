@@ -1,6 +1,6 @@
 """
 SQLite Database Manager with Vector Storage Support
-Handles system metrics, threat alerts, and skill logging
+Handles system metrics, threat alerts, skill logging, and FIM alerts
 """
 
 import sqlite3
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseManager:
-    """Manages SQLite database for metrics, threats, and skills"""
+    """Manages SQLite database for metrics, threats, skills, and FIM alerts"""
     
     def __init__(self, db_path: str = "security_dashboard.db"):
         self.db_path = db_path
@@ -87,6 +87,49 @@ class DatabaseManager:
                 )
             """)
             
+            # FIM alerts table (new for Phase 3)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS fim_alerts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    alert_id TEXT NOT NULL UNIQUE,
+                    file_path TEXT NOT NULL,
+                    alert_type TEXT NOT NULL,
+                    severity TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    old_hash TEXT,
+                    new_hash TEXT,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+            
+            # Audit log table for command/process/firewall actions
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_type TEXT NOT NULL,
+                    user TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    details TEXT,
+                    success INTEGER DEFAULT 1,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+            
+            # Remediation log table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS remediation_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rule_id TEXT NOT NULL,
+                    rule_name TEXT NOT NULL,
+                    threat_title TEXT,
+                    action_type TEXT NOT NULL,
+                    target TEXT,
+                    success INTEGER DEFAULT 1,
+                    message TEXT,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+            
             # Create indexes for performance
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_metrics_timestamp 
@@ -103,6 +146,14 @@ class DatabaseManager:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_skills_category 
                 ON skills_log(category)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_fim_alerts_type 
+                ON fim_alerts(alert_type)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_audit_events 
+                ON audit_log(event_type, timestamp)
             """)
             
             conn.commit()
@@ -289,3 +340,152 @@ class DatabaseManager:
             deleted = cursor.rowcount
             conn.commit()
             return deleted
+    
+    def insert_fim_alert(self, alert) -> int:
+        """Insert a file integrity monitoring alert"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO fim_alerts 
+                    (alert_id, file_path, alert_type, severity, description, 
+                     old_hash, new_hash, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    alert.id,
+                    alert.file_path,
+                    alert.alert_type,
+                    alert.severity,
+                    alert.description,
+                    alert.old_record.hash_sha256 if alert.old_record else None,
+                    alert.new_record.hash_sha256 if alert.new_record else None,
+                    alert.timestamp
+                ))
+                conn.commit()
+                return cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Failed to insert FIM alert: {e}")
+                return -1
+    
+    def get_fim_alerts(self, limit: int = 100, 
+                       alert_type: Optional[str] = None,
+                       severity: Optional[str] = None) -> List[Dict]:
+        """Get FIM alerts"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            conditions = []
+            params = []
+            
+            if alert_type:
+                conditions.append("alert_type = ?")
+                params.append(alert_type)
+            if severity:
+                conditions.append("severity = ?")
+                params.append(severity)
+            
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+            
+            cursor.execute(f"""
+                SELECT * FROM fim_alerts 
+                WHERE {where_clause}
+                ORDER BY timestamp DESC 
+                LIMIT ?
+            """, (*params, limit))
+            
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def insert_audit_event(self, event_type: str, user: str, action: str,
+                          details: Optional[Dict] = None, success: bool = True) -> int:
+        """Insert an audit log event"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            details_json = json.dumps(details) if details else None
+            
+            cursor.execute("""
+                INSERT INTO audit_log 
+                (event_type, user, action, details, success, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                event_type,
+                user,
+                action,
+                details_json,
+                1 if success else 0,
+                datetime.utcnow().isoformat()
+            ))
+            conn.commit()
+            return cursor.lastrowid
+    
+    def get_audit_logs(self, limit: int = 100, 
+                       event_type: Optional[str] = None,
+                       user: Optional[str] = None) -> List[Dict]:
+        """Get audit log entries"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            conditions = []
+            params = []
+            
+            if event_type:
+                conditions.append("event_type = ?")
+                params.append(event_type)
+            if user:
+                conditions.append("user = ?")
+                params.append(user)
+            
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+            
+            cursor.execute(f"""
+                SELECT * FROM audit_log 
+                WHERE {where_clause}
+                ORDER BY timestamp DESC 
+                LIMIT ?
+            """, (*params, limit))
+            
+            results = []
+            for row in cursor.fetchall():
+                row_dict = dict(row)
+                if row_dict.get("details"):
+                    try:
+                        row_dict["details"] = json.loads(row_dict["details"])
+                    except json.JSONDecodeError:
+                        pass
+                results.append(row_dict)
+            
+            return results
+    
+    def insert_remediation_event(self, rule_id: str, rule_name: str,
+                                threat_title: Optional[str], action_type: str,
+                                target: str, success: bool, message: str) -> int:
+        """Insert a remediation action log"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO remediation_log 
+                (rule_id, rule_name, threat_title, action_type, target, 
+                 success, message, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                rule_id,
+                rule_name,
+                threat_title,
+                action_type,
+                target,
+                1 if success else 0,
+                message,
+                datetime.utcnow().isoformat()
+            ))
+            conn.commit()
+            return cursor.lastrowid
+    
+    def get_remediation_logs(self, limit: int = 100) -> List[Dict]:
+        """Get remediation action logs"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM remediation_log 
+                ORDER BY timestamp DESC 
+                LIMIT ?
+            """, (limit,))
+            return [dict(row) for row in cursor.fetchall()]

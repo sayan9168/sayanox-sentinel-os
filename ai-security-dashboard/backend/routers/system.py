@@ -175,8 +175,8 @@ async def execute_command(
 
 
 @router.post("/process/kill")
-@limiter.limit("20/minute")
 async def kill_process(
+    request,
     process_data: dict,
     current_user: dict = Depends(require_role("admin"))
 ):
@@ -246,8 +246,8 @@ async def get_open_ports(request, current_user: dict = Depends(get_current_user)
 
 
 @router.post("/firewall/block")
-@limiter.limit("10/minute")
 async def block_ip(
+    request,
     ip_data: dict,
     current_user: dict = Depends(require_role("admin"))
 ):
@@ -274,8 +274,8 @@ async def block_ip(
 
 
 @router.post("/firewall/unblock")
-@limiter.limit("10/minute")
 async def unblock_ip(
+    request,
     ip_data: dict,
     current_user: dict = Depends(require_role("admin"))
 ):
