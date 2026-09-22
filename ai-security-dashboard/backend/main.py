@@ -1,6 +1,6 @@
 """
-AI-Powered System Resource & Security Intelligence Dashboard
-Enterprise-Grade Autonomous PC Operations Suite - Phase 3
+Sayanox Sentinel OS - Autonomous System Security, PC Operations & Threat Mitigation Platform
+Enterprise-Grade Full-Stack Security Suite with AI-Powered Remediation
 Backend Main Application - FastAPI with WebSocket streaming, JWT auth, FIM, and autonomous remediation
 """
 
@@ -47,7 +47,7 @@ connection_manager = {
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown events"""
     # Startup
-    logger.info("Initializing database and services...")
+    logger.info("[Sayanox Sentinel OS] Initializing database and services...")
     db_manager = DatabaseManager()
     db_manager.initialize()
     
@@ -85,12 +85,12 @@ async def lifespan(app: FastAPI):
         channels=["discord"]  # Default to discord if configured
     )
     
-    logger.info("Services initialized successfully")
+    logger.info("[Sayanox Sentinel OS] Services initialized successfully")
     
     yield
     
     # Shutdown
-    logger.info("Shutting down services...")
+    logger.info("[Sayanox Sentinel OS] Shutting down services...")
     
     # Cancel background tasks
     collector_task.cancel()
@@ -116,26 +116,35 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Autonomous PC Operations & Security Intelligence Suite",
+    title="Sayanox Sentinel OS",
     description="""
-## Enterprise-Grade AI Security Dashboard - Phase 3
+## Sayanox Sentinel OS - Autonomous System Security & Threat Mitigation Platform
 
-Full-stack autonomous system with:
-- **Real-time system monitoring** via WebSockets
-- **Interactive web terminal** for remote CLI access
-- **Process management** with kill capabilities
-- **Network/firewall control** for IP blocking
-- **Browser automation** for screenshots and web interaction
-- **Multi-channel alerts** (Telegram, Discord, Slack)
+Enterprise-grade full-stack security suite with AI-powered autonomous capabilities:
+
+### Core Features
+- **Real-time system monitoring** via WebSockets (CPU, RAM, Disk, Network, Processes)
+- **Interactive web terminal** for remote CLI access (Xterm.js powered)
+- **Process management** with kill capabilities and network inspection
+- **Network/firewall control** for IP blocking (iptables/netsh integration)
+- **Browser automation** using Playwright for screenshots and web interaction
+- **Multi-channel alerts** via Telegram, Discord, and Slack webhooks
 - **JWT authentication** with RBAC (Admin/Viewer roles)
-- **Audit logging** for all security events
-- **File Integrity Monitoring (FIM)** for critical files
+- **Audit logging** for all security events in SQLite + ChromaDB
+- **File Integrity Monitoring (FIM)** for critical files using watchdog/inotify
 - **Autonomous Remediation Engine** for automatic threat response
 - **Backup & Sync** with cloud support (S3, GCS, Azure, SFTP)
+- **Remote GUI Streaming** via HTML5 canvas/VNC integration
+
+### Security Features
+- Rate limiting on sensitive endpoints
+- Command sanitization for OS-level operations
+- Encrypted backup compression
+- Persistent skill memory for learned threat patterns
 
 ### Default Credentials
-- Admin: `admin` / `admin123`
-- Viewer: `viewer` / `viewer123`
+- Admin: `admin` / `admin123` (Full terminal access, process killing, firewall edit)
+- Viewer: `viewer` / `viewer123` (Metrics & threat tables only)
     """,
     version="3.0.0",
     lifespan=lifespan
@@ -204,8 +213,8 @@ async def root():
     """Root endpoint"""
     return {
         "status": "online",
-        "service": "Autonomous PC Operations & Security Intelligence Suite",
-        "version": "2.0.0"
+        "service": "Sayanox Sentinel OS - Autonomous System Security & Threat Mitigation Platform",
+        "version": "3.0.0"
     }
 
 
@@ -218,9 +227,12 @@ async def health_check():
         "active_connections": len(connection_manager["active_connections"]),
         "scraper_active": connection_manager.get("scraper_running", False),
         "services": {
-            "metrics_collector": not connection_manager.get("collector_task", None) is None,
-            "threat_scraper": not connection_manager.get("scraper_task", None) is None,
-            "database": connection_manager.get("db_manager") is not None
+            "metrics_collector": connection_manager.get("collector_task") is not None,
+            "threat_scraper": connection_manager.get("scraper_task") is not None,
+            "database": connection_manager.get("db_manager") is not None,
+            "fim_service": fim_service.is_running(),
+            "remediation_engine": remediation_engine.is_enabled(),
+            "backup_service": backup_service.is_configured()
         }
     }
 

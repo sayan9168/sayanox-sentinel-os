@@ -36,8 +36,8 @@ async def stop_browser(current_user: dict = Depends(require_role("admin"))):
 
 
 @router.post("/browser/navigate")
-@limiter.limit("30/minute")
 async def browser_navigate(
+    request,
     navigate_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
@@ -64,8 +64,8 @@ async def browser_navigate(
 
 
 @router.post("/browser/screenshot")
-@limiter.limit("20/minute")
 async def take_screenshot(
+    request,
     screenshot_data: Optional[dict] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -91,8 +91,11 @@ async def take_screenshot(
 
 
 @router.get("/browser/screenshot/{filename}")
-@limiter.limit("60/minute")
-async def get_screenshot(request, filename: str, current_user: dict = Depends(get_current_user)):
+async def get_screenshot(
+    request,
+    filename: str,
+    current_user: dict = Depends(get_current_user)
+):
     """Get a screenshot as base64 image"""
     from pathlib import Path
     
@@ -118,8 +121,8 @@ async def get_screenshot(request, filename: str, current_user: dict = Depends(ge
 
 
 @router.post("/browser/click")
-@limiter.limit("30/minute")
 async def browser_click(
+    request,
     click_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
@@ -145,8 +148,8 @@ async def browser_click(
 
 
 @router.post("/browser/fill")
-@limiter.limit("30/minute")
 async def browser_fill(
+    request,
     fill_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
@@ -173,8 +176,8 @@ async def browser_fill(
 
 
 @router.post("/browser/evaluate")
-@limiter.limit("30/minute")
 async def browser_evaluate(
+    request,
     eval_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
@@ -196,8 +199,10 @@ async def browser_evaluate(
 
 
 @router.get("/browser/content")
-@limiter.limit("30/minute")
-async def get_page_content(request, current_user: dict = Depends(get_current_user)):
+async def get_page_content(
+    request,
+    current_user: dict = Depends(get_current_user)
+):
     """Get the HTML content of the current page"""
     content = await browser_automation.get_content()
     return {
@@ -207,8 +212,11 @@ async def get_page_content(request, current_user: dict = Depends(get_current_use
 
 
 @router.get("/browser/text/{selector}")
-@limiter.limit("60/minute")
-async def get_element_text(request, selector: str, current_user: dict = Depends(get_current_user)):
+async def get_element_text(
+    request,
+    selector: str,
+    current_user: dict = Depends(get_current_user)
+):
     """Get text content of a specific element"""
     text = await browser_automation.get_text(selector)
     return {
@@ -219,8 +227,10 @@ async def get_element_text(request, selector: str, current_user: dict = Depends(
 
 
 @router.post("/browser/scrape")
-@limiter.limit("10/minute")
-async def scrape_advisories(request, current_user: dict = Depends(get_current_user)):
+async def scrape_advisories(
+    request,
+    current_user: dict = Depends(get_current_user)
+):
     """Scrape security advisories from configured sources"""
     advisories = await browser_automation.scrape_security_advisories()
     return {
@@ -231,8 +241,8 @@ async def scrape_advisories(request, current_user: dict = Depends(get_current_us
 
 
 @router.post("/browser/captcha")
-@limiter.limit("5/minute")
 async def handle_captcha(
+    request,
     captcha_data: Optional[dict] = None,
     current_user: dict = Depends(get_current_user)
 ):

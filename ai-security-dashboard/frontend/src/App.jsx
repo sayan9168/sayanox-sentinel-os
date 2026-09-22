@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Shield, Database, Terminal, Wifi, Cpu, HardDrive, Server } from 'lucide-react';
+import { Activity, Shield, Database, Terminal, Wifi, Cpu, HardDrive, Server, AlertTriangle, Lock, RefreshCw } from 'lucide-react';
 import { metricsService, threatsService, skillsService } from '../services/api';
 import useWebSocket from '../hooks/useWebSocket';
 import MetricCard from '../components/MetricCard';
@@ -58,7 +58,7 @@ const App = () => {
       <div className="min-h-screen bg-dark-bg grid-bg flex items-center justify-center">
         <div className="text-center">
           <Shield className="w-16 h-16 text-cyber-400 mx-auto mb-4 animate-pulse" />
-          <p className="text-cyber-400 font-mono">Initializing Security Dashboard...</p>
+          <p className="text-cyber-400 font-mono">Sayanox Sentinel OS Initializing...</p>
         </div>
       </div>
     );
@@ -75,8 +75,8 @@ const App = () => {
                 <Shield className="w-8 h-8 text-cyber-400" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">AI Security Intelligence Dashboard</h1>
-                <p className="text-gray-500 text-sm">Real-time System Monitoring & Threat Detection</p>
+                <h1 className="text-xl font-bold text-white">Sayanox Sentinel OS</h1>
+                <p className="text-gray-500 text-sm">Autonomous System Security & Threat Mitigation Platform</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -192,7 +192,8 @@ const App = () => {
       {/* Footer */}
       <footer className="border-t border-dark-border mt-8 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
-          <p>AI Security Intelligence Dashboard v1.0.0 | Real-time monitoring powered by FastAPI & React</p>
+          <p>Sayanox Sentinel OS v3.0.0 | Autonomous System Security & Threat Mitigation Platform</p>
+          <p className="mt-1">Powered by FastAPI, React, Playwright & ChromaDB</p>
         </div>
       </footer>
     </div>

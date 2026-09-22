@@ -1,20 +1,21 @@
 #!/bin/bash
 
-# AI Security Dashboard - Setup Script
-# Enterprise-Grade Autonomous PC Operations Suite
+# Sayanox Sentinel OS - Setup Script
+# Autonomous System Security, PC Operations & Threat Mitigation Platform
 # Zero-configuration startup with self-healing
 
 set -e
 
 echo "=============================================="
-echo "AI Security Dashboard - Setup & Launch"
-echo "Enterprise-Grade Autonomous PC Operations Suite"
+echo "Sayanox Sentinel OS - Setup & Launch"
+echo "Autonomous System Security & Threat Mitigation Platform"
 echo "=============================================="
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
@@ -31,7 +32,7 @@ RETRY_DELAY=5
 print_success() { echo -e "${GREEN}✓ $1${NC}"; }
 print_error() { echo -e "${RED}✗ $1${NC}"; }
 print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
-print_info() { echo "→ $1"; }
+print_info() { echo -e "${CYAN}→ $1${NC}"; }
 
 # Function to check command availability
 check_command() {
@@ -95,6 +96,13 @@ else
     print_warning "Node.js not found. Frontend development will be limited."
 fi
 
+# Check Docker (optional, for containerized deployment)
+if check_command "docker"; then
+    print_success "Docker found: $(docker --version)"
+else
+    print_warning "Docker not found. Will use direct deployment mode."
+fi
+
 # Install Playwright browsers
 print_info "Installing Playwright browsers..."
 retry_command "$PYTHON_CMD -m playwright install chromium" "Playwright browser installation" || {
@@ -125,6 +133,7 @@ print_info "Creating data directories..."
 mkdir -p backend/data
 mkdir -p screenshots
 mkdir -p skills
+mkdir -p backup
 print_success "Directories created"
 
 # Initialize database
@@ -142,10 +151,13 @@ print('Database initialized successfully')
 if [ ! -f ".env" ]; then
     print_info "Creating .env file..."
     cat > .env << 'EOF'
-# JWT Configuration
-JWT_SECRET_KEY=your-super-secret-key-change-in-production-abc123xyz789
+# Sayanox Sentinel OS Environment Configuration
+# ================================================
 
-# Notification Channels (optional)
+# JWT Configuration (CHANGE IN PRODUCTION!)
+JWT_SECRET_KEY=sayanox-super-secret-jwt-key-change-in-production-xyz789abc123
+
+# Notification Channels (optional - leave empty to disable)
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 DISCORD_WEBHOOK_URL=
@@ -153,6 +165,26 @@ SLACK_WEBHOOK_URL=
 
 # Default notification channels
 NOTIFICATION_CHANNELS=discord
+
+# Cloud Backup Configuration (optional)
+CLOUD_BACKUP_ENABLED=false
+S3_BUCKET=
+S3_ACCESS_KEY=
+S3_SECRET_KEY=
+GCS_BUCKET=
+AZURE_CONTAINER=
+AZURE_CONNECTION_STRING=
+SFTP_HOST=
+SFTP_USER=
+SFTP_PASSWORD=
+
+# FIM (File Integrity Monitoring) Paths
+FIM_CRITICAL_PATHS=/etc,/usr/bin,./backend,./frontend
+
+# Autonomous Remediation Settings
+AUTO_REMEDIATION_ENABLED=true
+CPU_THRESHOLD=90
+MEMORY_THRESHOLD=90
 EOF
     print_success ".env file created"
 fi
@@ -163,22 +195,39 @@ echo "=============================================="
 print_success "Setup completed successfully!"
 echo "=============================================="
 echo ""
+echo "╔════════════════════════════════════════╗"
+echo "║     SAYANOX SENTINEL OS v3.0.0         ║"
+echo "║  Autonomous Security & Threat Platform ║"
+echo "╚════════════════════════════════════════╝"
+echo ""
 echo "Default Credentials:"
-echo "  Admin:  admin / admin123"
-echo "  Viewer: viewer / viewer123"
+echo "  Admin:  admin / admin123  (Full terminal access, process killing, firewall edit)"
+echo "  Viewer: viewer / viewer123 (Metrics & threat tables only)"
 echo ""
 echo "To start the application:"
-echo "  Option 1 - Docker Compose:"
+echo ""
+echo "  Option 1 - Docker Compose (Recommended):"
 echo "    docker-compose up -d"
 echo ""
 echo "  Option 2 - Direct Run:"
 echo "    cd backend && python main.py"
 echo ""
-echo "API Documentation:"
-echo "  http://localhost:8000/docs"
+echo "Access Points:"
+echo "  API Documentation:  http://localhost:8000/docs"
+echo "  Frontend UI:        http://localhost:3000"
+echo "  Health Check:       http://localhost:8000/api/v1/health"
 echo ""
-echo "Frontend (after building):"
-echo "  http://localhost:3000"
+echo "Core Features Enabled:"
+echo "  ✓ Real-time system monitoring (CPU, RAM, Disk, Network)"
+echo "  ✓ Interactive web terminal (Xterm.js)"
+echo "  ✓ Process management & network inspection"
+echo "  ✓ Firewall control (iptables/netsh)"
+echo "  ✓ Browser automation (Playwright)"
+echo "  ✓ Multi-channel alerts (Telegram, Discord, Slack)"
+echo "  ✓ JWT authentication with RBAC"
+echo "  ✓ File Integrity Monitoring (FIM)"
+echo "  ✓ Autonomous Remediation Engine"
+echo "  ✓ Cloud backup (S3, GCS, Azure, SFTP)"
 echo "=============================================="
 
 exit 0
