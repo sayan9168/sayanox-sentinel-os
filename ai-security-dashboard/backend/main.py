@@ -27,7 +27,10 @@ from backend.services.notification_service import notification_service, configur
 from backend.services.fim_service import fim_service, configure_fim
 from backend.services.remediation_engine import remediation_engine, configure_remediation
 from backend.services.backup_service import backup_service, configure_backup
-from backend.routers import metrics, threats, skills, auth, system, browser, notifications, fim, remediation, backup
+from backend.services.anomaly_detection import anomaly_detector, background_training_loop
+from backend.services.honeypot_service import honeypot_service, setup_honeypot_with_firewall
+from backend.services.network_scanner import network_sniffer, nmap_scanner
+from backend.routers import metrics, threats, skills, auth, system, browser, notifications, fim, remediation, backup, security
 from backend.middleware.security import limiter, rate_limit_exceeded_handler, audit_logger
 
 # Configure logging
@@ -85,6 +88,17 @@ async def lifespan(app: FastAPI):
         channels=["discord"]  # Default to discord if configured
     )
     
+    # Start honeypot service with firewall integration
+    async def firewall_block_callback(ip: str, reason: str):
+        """Callback to block IPs from honeypot triggers."""
+        try:
+            await system_controller.block_ip(ip, f"Honeypot trigger: {reason}")
+        except Exception as e:
+            logger.error(f"Failed to block IP from honeypot: {e}")
+    
+    await setup_honeypot_with_firewall(firewall_block_callback)
+    honeypot_service.start()
+    
     logger.info("[Sayanox Sentinel OS] Services initialized successfully")
     
     yield
@@ -103,6 +117,12 @@ async def lifespan(app: FastAPI):
     
     # Stop FIM
     fim_service.stop()
+    
+    # Stop honeypot
+    honeypot_service.stop()
+    
+    # Stop network sniffer
+    network_sniffer.stop_sniffing()
     
     # Close browser automation
     await browser_automation.stop()
@@ -171,6 +191,7 @@ app.include_router(skills.router, prefix="/api/v1/skills", tags=["skills"])
 app.include_router(system.router, prefix="/api/v1/system", tags=["system-control"])
 app.include_router(browser.router, prefix="/api/v1/browser", tags=["browser-automation"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
+app.include_router(security.router, prefix="/api/v1/security", tags=["security-ml"])
 
 
 @app.websocket("/ws/metrics")

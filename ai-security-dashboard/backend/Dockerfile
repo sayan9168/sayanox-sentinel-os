@@ -5,6 +5,11 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    nmap \
+    libpcap-dev \
+    tcpdump \
+    iptables \
+    net-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
