@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0a0a0f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12121a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e1e2a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a3a;
+}
+
+/* Cyber glow effects */
+.cyber-glow {
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.3),
+              0 0 20px rgba(14, 165, 233, 0.2),
+              0 0 30px rgba(14, 165, 233, 0.1);
+}
+
+.cyber-border {
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  box-shadow: 0 0 5px rgba(14, 165, 233, 0.1);
+}
+
+/* Severity colors */
+.severity-critical {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+
+.severity-high {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+}
+
+.severity-medium {
+  background: linear-gradient(135deg, #ca8a04 0%, #a16207 100%);
+}
+
+.severity-low {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+/* Grid pattern background */
+.grid-bg {
+  background-image: 
+    linear-gradient(rgba(14, 165, 233, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
