@@ -70,3 +70,4 @@ htmlcov/
 # MyPy cache
 .mypy_cache/
 ```.next/
+.next/
