@@ -1,7 +1,7 @@
 """
 Sayanox Sentinel OS - Autonomous System Security, PC Operations & Threat Mitigation Platform
 Backend FastAPI Application with WebSocket streaming and async workers
-Phase 3 Upgrade: Autonomous Enterprise Capabilities
+Phase 4 Enterprise Upgrade: ML Anomaly Detection, Honeypot, Network Scanning, PWA Support
 """
 
 import asyncio
@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 import psutil
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse, Response
 from pydantic import BaseModel
 import uvicorn
 from playwright.async_api import async_playwright
@@ -27,6 +27,11 @@ from fim.service import fim_service
 from firewall.manager import firewall_manager
 from backup.service import backup_manager
 from gui.streamer import gui_manager
+
+# Import Phase 4 modules
+from anomaly.detector import anomaly_detector
+from honeypot.worker import honeypot_worker
+from network.scanner import packet_sniffer, nmap_scanner
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -154,6 +159,9 @@ app.add_middleware(
 # Connected WebSocket clients
 connected_clients: List[WebSocket] = []
 
+# Phase 4: Packet sniffer WebSocket clients
+packet_sniffer_clients: List[WebSocket] = []
+
 
 async def collect_system_metrics() -> Dict[str, Any]:
     """Collect real-time system metrics using psutil."""
@@ -177,6 +185,9 @@ async def collect_system_metrics() -> Dict[str, Any]:
         
         # Store metrics in database
         store_metrics(metrics)
+        
+        # Add sample to anomaly detector for ML training
+        anomaly_detector.add_sample(metrics)
         
         return metrics
     except Exception as e:
@@ -281,6 +292,28 @@ async def metrics_broadcast_loop():
             metrics = await collect_system_metrics()
             if metrics:
                 await broadcast_metrics(metrics)
+                
+                # Check for anomalies with ML model (every 10 cycles to reduce overhead)
+                if hasattr(metrics_broadcast_loop, 'cycle_count'):
+                    metrics_broadcast_loop.cycle_count += 1
+                else:
+                    metrics_broadcast_loop.cycle_count = 1
+                
+                if metrics_broadcast_loop.cycle_count % 10 == 0:
+                    anomaly_result = anomaly_detector.detect_anomaly(metrics)
+                    if anomaly_result.get('is_anomaly'):
+                        logger.warning(f"ML Anomaly detected: {anomaly_result}")
+                        # Create threat alert for anomaly
+                        threat = {
+                            'title': f"ML Anomaly Detection Alert - {anomaly_result['severity'].upper()}",
+                            'source': 'AnomalyDetector',
+                            'severity': anomaly_result['severity'],
+                            'description': f"System behavior anomaly detected. Score: {anomaly_result['anomaly_score']:.4f}",
+                            'url': '',
+                            'published_date': datetime.utcnow().isoformat(),
+                            'detected_at': datetime.utcnow().isoformat()
+                        }
+                        store_threat(threat)
         except Exception as e:
             logger.error(f"Error in broadcast loop: {e}")
         await asyncio.sleep(2)
@@ -291,6 +324,42 @@ async def start_background_tasks():
     """Start background tasks on application startup."""
     asyncio.create_task(metrics_broadcast_loop())
     logger.info("Background metrics collection started")
+    
+    # Setup honeypot firewall callback
+    def firewall_block_callback(ip_address: str):
+        """Callback to block IPs detected by honeypot."""
+        try:
+            firewall_manager.block_ip(ip_address, "Blocked by Honeypot - Sayanox Sentinel OS")
+        except Exception as e:
+            logger.error(f"Error blocking IP from honeypot: {e}")
+    
+    honeypot_worker.firewall_callback = firewall_block_callback
+    
+    # Start honeypot in background
+    asyncio.create_task(start_honeypot())
+    
+    # Start packet sniffer in background
+    asyncio.create_task(start_packet_sniffer())
+    
+    logger.info("Phase 4 Enterprise modules initialized")
+
+
+async def start_honeypot():
+    """Start the honeypot worker."""
+    await asyncio.sleep(2)  # Delay to let main server start
+    try:
+        await honeypot_worker.start()
+    except Exception as e:
+        logger.error(f"Error starting honeypot: {e}")
+
+
+async def start_packet_sniffer():
+    """Start the packet sniffer."""
+    await asyncio.sleep(3)  # Delay to let main server start
+    try:
+        await packet_sniffer.start()
+    except Exception as e:
+        logger.error(f"Error starting packet sniffer: {e}")
 
 
 @app.get("/")
@@ -638,6 +707,243 @@ async def add_threat_with_remediation(threat: ThreatAlert):
         auto_remediated=auto_remediated,
         remediation_results=remediation_results
     )
+
+
+# =====================
+# PHASE 4 API ENDPOINTS
+# =====================
+
+class NmapScanRequest(BaseModel):
+    """Request model for nmap scans."""
+    host: str
+    scan_type: str = "quick"  # quick, full, custom
+    ports: Optional[str] = None
+    arguments: Optional[str] = None
+
+
+@app.get("/api/v1/anomaly/status")
+async def get_anomaly_status():
+    """Get ML anomaly detector status."""
+    return anomaly_detector.get_model_status()
+
+
+@app.post("/api/v1/anomaly/train")
+async def train_anomaly_model(min_samples: int = 50):
+    """Manually trigger ML model training."""
+    success = anomaly_detector.train(min_samples)
+    return {"success": success, "message": "Training completed" if success else "Training failed"}
+
+
+@app.post("/api/v1/anomaly/reset")
+async def reset_anomaly_model():
+    """Reset the anomaly detection model."""
+    anomaly_detector.reset()
+    return {"success": True, "message": "Model reset complete"}
+
+
+@app.get("/api/v1/honeypot/status")
+async def get_honeypot_status():
+    """Get honeypot worker status."""
+    return honeypot_worker.get_status()
+
+
+@app.post("/api/v1/honeypot/start")
+async def start_honeypot_endpoint(ports: Optional[List[int]] = None):
+    """Start the honeypot worker."""
+    asyncio.create_task(honeypot_worker.start(ports))
+    return {"success": True, "message": "Honeypot starting"}
+
+
+@app.post("/api/v1/honeypot/stop")
+async def stop_honeypot_endpoint():
+    """Stop the honeypot worker."""
+    await honeypot_worker.stop()
+    return {"success": True, "message": "Honeypot stopped"}
+
+
+@app.get("/api/v1/honeypot/logs")
+async def get_honeypot_logs(limit: int = 100):
+    """Get honeypot connection logs."""
+    return {"logs": honeypot_worker.get_connection_logs(limit)}
+
+
+@app.post("/api/v1/honeypot/logs/clear")
+async def clear_honeypot_logs():
+    """Clear honeypot logs."""
+    honeypot_worker.clear_logs()
+    return {"success": True}
+
+
+@app.post("/api/v1/honeypot/port/add")
+async def add_honeypot_port(port: int):
+    """Add a decoy port to the honeypot."""
+    honeypot_worker.add_decoy_port(port)
+    return {"success": True, "port": port}
+
+
+@app.delete("/api/v1/honeypot/port/remove")
+async def remove_honeypot_port(port: int):
+    """Remove a decoy port from the honeypot."""
+    honeypot_worker.remove_decoy_port(port)
+    return {"success": True, "port": port}
+
+
+@app.websocket("/ws/packets")
+async def websocket_packets_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time network packet streaming."""
+    await websocket.accept()
+    packet_sniffer_clients.append(websocket)
+    logger.info(f"Packet sniffer client connected. Total: {len(packet_sniffer_clients)}")
+    
+    async def send_packet(packet_info: Dict[str, Any]):
+        try:
+            await websocket.send_json({"type": "packet", "data": packet_info})
+        except Exception:
+            pass
+    
+    packet_sniffer.add_websocket_callback(send_packet)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+            elif data == "get_packets":
+                packets = packet_sniffer.get_captured_packets(50)
+                await websocket.send_json({"type": "packets", "data": packets})
+    except WebSocketDisconnect:
+        packet_sniffer_clients.remove(websocket)
+        logger.info(f"Packet sniffer client disconnected. Total: {len(packet_sniffer_clients)}")
+    except Exception as e:
+        logger.error(f"Packet WebSocket error: {e}")
+        if websocket in packet_sniffer_clients:
+            packet_sniffer_clients.remove(websocket)
+
+
+@app.get("/api/v1/network/packets")
+async def get_captured_packets(limit: int = 100):
+    """Get recently captured network packets."""
+    return {"packets": packet_sniffer.get_captured_packets(limit)}
+
+
+@app.post("/api/v1/network/sniffer/start")
+async def start_sniffer():
+    """Start the packet sniffer."""
+    asyncio.create_task(packet_sniffer.start())
+    return {"success": True, "message": "Packet sniffer starting"}
+
+
+@app.post("/api/v1/network/sniffer/stop")
+async def stop_sniffer():
+    """Stop the packet sniffer."""
+    await packet_sniffer.stop()
+    return {"success": True, "message": "Packet sniffer stopped"}
+
+
+@app.get("/api/v1/network/sniffer/status")
+async def get_sniffer_status():
+    """Get packet sniffer status."""
+    return packet_sniffer.get_status()
+
+
+@app.post("/api/v1/network/scan", response_model=Dict[str, Any])
+async def perform_nmap_scan(request: NmapScanRequest):
+    """Perform an nmap network scan."""
+    if request.scan_type == "quick":
+        result = nmap_scanner.quick_scan(request.host)
+    elif request.scan_type == "full":
+        result = nmap_scanner.full_scan(request.host)
+    else:
+        result = nmap_scanner.scan_host(
+            request.host, 
+            ports=request.ports or "21,22,23,25,80,443",
+            arguments=request.arguments or "-sV"
+        )
+    return result
+
+
+@app.get("/api/v1/network/scan/history")
+async def get_scan_history(limit: int = 20):
+    """Get nmap scan history."""
+    return {"history": nmap_scanner.get_scan_history(limit)}
+
+
+@app.post("/api/v1/network/scan/network-range")
+async def scan_network_range(network: str, ports: str = "22,80,443"):
+    """Scan a network range for hosts."""
+    results = nmap_scanner.scan_network_range(network, ports)
+    return {"results": results}
+
+
+@app.get("/api/v1/network/scanner/status")
+async def get_scanner_status():
+    """Get nmap scanner status."""
+    return nmap_scanner.get_status()
+
+
+@app.get("/manifest.json")
+async def get_manifest():
+    """Serve PWA manifest.json for installable web app."""
+    manifest = {
+        "name": "Sayanox Sentinel OS",
+        "short_name": "Sentinel",
+        "description": "Autonomous System Security & Threat Mitigation Platform",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0a0a14",
+        "theme_color": "#00ccff",
+        "orientation": "any",
+        "icons": [
+            {
+                "src": "/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    return JSONResponse(content=manifest)
+
+
+@app.get("/service-worker.js")
+async def get_service_worker():
+    """Serve PWA service worker for offline support."""
+    service_worker = """
+// Sayanox Sentinel OS Service Worker
+const CACHE_NAME = 'sayanox-v1';
+const ASSETS = ['/', '/index.html', '/manifest.json'];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((names) => {
+      return Promise.all(
+        names.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+      );
+    })
+  );
+});
+"""
+    return Response(content=service_worker, media_type="application/javascript")
 
 
 if __name__ == "__main__":

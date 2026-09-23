@@ -2,11 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for Phase 4 Enterprise features
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
+    nmap \
+    libpcap-dev \
+    tcpdump \
+    build-essential \
+    libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
