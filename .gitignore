@@ -1,32 +1,48 @@
 ```
 # Dependencies
 node_modules/
+venv/
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
 
 # Build artifacts
-.ai-security-dashboard/frontend/node_modules/.vite/
+dist/
+build/
+target/
+*.pyc
+*.class
+*.o
+*.obj
+*.so
+*.dll
+*.exe
 
-# Environment variables
+# Environment files
 .env
 .env.local
-.env.*
+*.env.*
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
 
 # Logs
 *.log
 
-# Coverage reports
+# Coverage
 coverage/
 htmlcov/
+.coverage
 
-# IDE files
-.vscode/
-.idea/
-
-# OS generated files
+# OS files
 .DS_Store
 Thumbs.db
-
-# Database files
-*.db
 
 # Compressed files
 *.zip
@@ -37,18 +53,4 @@ Thumbs.db
 *.xz
 *.7z
 *.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```

@@ -162,8 +162,8 @@ function App() {
             <div className="flex items-center gap-3">
               <Shield className="w-8 h-8 text-cyber-accent" />
               <div>
-                <h1 className="text-xl font-bold text-cyber-accent">AI Security Intelligence Dashboard</h1>
-                <p className="text-xs text-gray-400">Real-time System Monitoring & Threat Detection</p>
+                <h1 className="text-xl font-bold text-cyber-accent">Sayanox Sentinel OS</h1>
+                <p className="text-xs text-gray-400">Autonomous System Security & Threat Mitigation Platform</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -532,7 +532,7 @@ function App() {
       {/* Footer */}
       <footer className="border-t border-cyber-gray mt-8 py-4">
         <div className="container mx-auto px-4 text-center text-sm text-gray-500">
-          AI Security Intelligence Dashboard v1.0.0 | Real-time monitoring powered by FastAPI + React
+          Sayanox Sentinel OS v1.0.0 | Autonomous System Security Platform powered by FastAPI + React
         </div>
       </footer>
     </div>

@@ -5,7 +5,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: security-backend
+    container_name: sayanox-backend
     ports:
       - "8000:8000"
     environment:
@@ -42,7 +42,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: security-frontend
+    container_name: sayanox-frontend
     ports:
       - "3000:80"
     depends_on:

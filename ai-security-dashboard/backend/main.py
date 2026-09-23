@@ -1,5 +1,5 @@
 """
-AI-Powered System Resource & Security Intelligence Dashboard
+Sayanox Sentinel OS - Autonomous System Security, PC Operations & Threat Mitigation Platform
 Backend FastAPI Application with WebSocket streaming and async workers
 Phase 3 Upgrade: Autonomous Enterprise Capabilities
 """
@@ -136,8 +136,8 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="AI Security Intelligence Dashboard API",
-    description="Real-time system monitoring and threat detection API",
+    title="Sayanox Sentinel OS API",
+    description="Autonomous System Security, PC Operations & Threat Mitigation Platform API",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -296,7 +296,7 @@ async def start_background_tasks():
 @app.get("/")
 async def root():
     """Root endpoint."""
-    return {"message": "AI Security Intelligence Dashboard API", "version": "1.0.0"}
+    return {"message": "Sayanox Sentinel OS API", "version": "1.0.0"}
 
 
 @app.get("/api/v1/metrics", response_model=SystemMetrics)
@@ -491,7 +491,7 @@ async def stop_fim_service():
 
 # Firewall Endpoints
 @app.post("/api/v1/firewall/block")
-async def block_ip(ip_address: str, description: str = "Blocked by Security Dashboard"):
+async def block_ip(ip_address: str, description: str = "Blocked by Sayanox Sentinel OS"):
     """Block an IP address using OS firewall."""
     result = firewall_manager.block_ip(ip_address, description)
     if result.get("success"):

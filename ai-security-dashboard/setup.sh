@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# AI Security Dashboard - Setup Script
-# Enterprise-Grade Autonomous PC Operations Suite
+# Sayanox Sentinel OS - Setup Script
+# Autonomous System Security, PC Operations & Threat Mitigation Platform
 
 set -e
 
 echo "========================================"
-echo "AI Security Dashboard - Setup Script"
+echo "Sayanox Sentinel OS - Setup Script"
 echo "========================================"
 
 # Colors for output
