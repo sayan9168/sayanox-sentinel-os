@@ -33,6 +33,14 @@ from anomaly.detector import anomaly_detector
 from honeypot.worker import honeypot_worker
 from network.scanner import packet_sniffer, nmap_scanner
 
+# Import Phase 5 advanced modules
+from ransomware.canary import canary_guardian
+from sentinel.killswitch import (
+    kill_switch, LEVEL_PAUSE, LEVEL_ISOLATE, LEVEL_HALT, LEVEL_FREEZE,
+)
+from sentinel.nlp import threat_nlp
+from sentinel.correlator import incident_correlator
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -66,7 +74,7 @@ class ThreatAlert(BaseModel):
     description: str
     url: str
     published_date: str
-    detected_at: str
+    detected_at: Optional[str] = None  # Auto-filled with current UTC time if omitted
 
 
 class SkillEntry(BaseModel):
@@ -125,6 +133,12 @@ def init_database():
     
     conn.commit()
     conn.close()
+
+    # Phase 5: Ransomware canary events + kill switch audit ledger tables
+    canary_guardian.db_path = DB_PATH
+    canary_guardian._init_db()
+    kill_switch.db_path = DB_PATH
+    kill_switch._init_db()
     logger.info("Database initialized successfully")
 
 
@@ -340,8 +354,70 @@ async def start_background_tasks():
     
     # Start packet sniffer in background
     asyncio.create_task(start_packet_sniffer())
-    
+
+    # ---- Phase 5: wire kill switch degradation ladder to real subsystems ----
+    def _ks_pause():
+        """L1: pause autonomous workers."""
+        try:
+            fim_service.stop()
+        except Exception as e:
+            logger.error(f"Kill switch pause (FIM) error: {e}")
+
+    def _ks_isolate():
+        """L2: network isolation via firewall."""
+        try:
+            firewall_manager.isolate_network()
+        except AttributeError:
+            logger.warning("Firewall manager has no isolate_network; skipping L2")
+        except Exception as e:
+            logger.error(f"Kill switch isolate error: {e}")
+
+    def _ks_halt():
+        """L3: halt honeypot/sniffer automation."""
+        try:
+            asyncio.create_task(honeypot_worker.stop())
+            asyncio.create_task(packet_sniffer.stop())
+        except Exception as e:
+            logger.error(f"Kill switch halt error: {e}")
+
+    def _ks_freeze():
+        """L4: freeze remediation engine into safe mode."""
+        try:
+            rules = remediation_engine.get_rules()
+            rule_list = rules.get("rules", []) if isinstance(rules, dict) else rules
+            for rule in rule_list:
+                rule_id = rule.get("id") if isinstance(rule, dict) else getattr(rule, "id", None)
+                if rule_id:
+                    remediation_engine.disable_rule(rule_id)
+        except Exception as e:
+            logger.error(f"Kill switch freeze error: {e}")
+
+    kill_switch.register_hook(LEVEL_PAUSE, _ks_pause)
+    kill_switch.register_hook(LEVEL_ISOLATE, _ks_isolate)
+    kill_switch.register_hook(LEVEL_HALT, _ks_halt)
+    kill_switch.register_hook(LEVEL_FREEZE, _ks_freeze)
+
+    # ---- Phase 5: correlate ransomware findings into incidents ----
+    def _canary_to_incident(finding):
+        event_map = {
+            "CANARY_TRIPPED": "canary_tripped",
+            "ENCRYPTION_STORM": "encryption_storm",
+            "HIGH_ENTROPY_WRITE": "high_entropy_write",
+            "SUSPICIOUS_EXTENSION": "suspicious_process",
+        }
+        etype = event_map.get(finding.get("type", ""), "anomaly_detected")
+        incident_correlator.ingest(etype, {
+            "file_path": finding.get("file"),
+            "detail": finding.get("detail"),
+        })
+
+    canary_guardian.register_callback(_canary_to_incident)
+
+    # Start ransomware canary watchdog in background thread
+    canary_guardian.start(interval=5)
+
     logger.info("Phase 4 Enterprise modules initialized")
+    logger.info("Phase 5 Advanced modules initialized (Canary/KillSwitch/NLP/Correlator)")
 
 
 async def start_honeypot():
@@ -879,6 +955,184 @@ async def scan_network_range(network: str, ports: str = "22,80,443"):
 async def get_scanner_status():
     """Get nmap scanner status."""
     return nmap_scanner.get_status()
+
+
+# =====================
+# PHASE 5 ADVANCED API ENDPOINTS
+# =====================
+
+class KillSwitchRequest(BaseModel):
+    """Kill switch activation request."""
+    level: int  # 1=pause, 2=isolate, 3=halt, 4=freeze
+    reason: str = ""
+    pin: Optional[str] = None
+
+
+class KillSwitchPinRequest(BaseModel):
+    pin: str
+
+
+class NLPAnalysisRequest(BaseModel):
+    text: str
+
+
+class CorrelateEventRequest(BaseModel):
+    event_type: str
+    source_ip: Optional[str] = None
+    file_path: Optional[str] = None
+    process: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+
+# ---- Ransomware Canary Guardian ----
+@app.get("/api/v1/ransomware/status")
+async def get_ransomware_status():
+    """Get ransomware canary guardian status."""
+    return canary_guardian.get_status()
+
+
+@app.post("/api/v1/ransomware/watch")
+async def add_ransomware_watch(directory: str):
+    """Protect a directory: plant canary files and start watching."""
+    result = canary_guardian.add_watch_directory(directory)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed"))
+    return result
+
+
+@app.get("/api/v1/ransomware/alerts")
+async def get_ransomware_alerts(limit: int = 50):
+    """Get live ransomware detection alerts."""
+    return {"alerts": canary_guardian.get_alerts(limit)}
+
+
+@app.get("/api/v1/ransomware/events")
+async def get_ransomware_events(limit: int = 100):
+    """Get persisted ransomware event log."""
+    return {"events": canary_guardian.get_events(limit)}
+
+
+@app.post("/api/v1/ransomware/sweep")
+async def trigger_ransomware_sweep():
+    """Force an immediate canary + entropy sweep."""
+    findings = canary_guardian.sweep_once()
+    return {"findings": findings, "count": len(findings)}
+
+
+@app.post("/api/v1/ransomware/lockdown/clear")
+async def clear_ransomware_lockdown():
+    """Clear ransomware lockdown after incident review."""
+    return canary_guardian.clear_lockdown()
+
+
+# ---- AI Kill Switch ----
+@app.get("/api/v1/killswitch/status")
+async def get_killswitch_status():
+    """Get kill switch arm state, active level and audit ledger."""
+    return kill_switch.get_status()
+
+
+@app.post("/api/v1/killswitch/pin")
+async def set_killswitch_pin(request: KillSwitchPinRequest):
+    """Configure the kill-switch PIN (required for L2+ isolation)."""
+    if len(request.pin) < 4:
+        raise HTTPException(status_code=400, detail="PIN too short")
+    kill_switch.set_pin(request.pin)
+    return {"success": True, "message": "Kill switch PIN configured"}
+
+
+@app.post("/api/v1/killswitch/activate")
+async def activate_killswitch(request: KillSwitchRequest):
+    """Engage the AI kill switch ladder (L1 pause -> L4 full freeze)."""
+    result = kill_switch.activate(
+        level=request.level, actor="api", reason=request.reason, pin=request.pin
+    )
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed"))
+    return result
+
+
+@app.post("/api/v1/killswitch/stand-down")
+async def standdown_killswitch(request: Optional[KillSwitchPinRequest] = None):
+    """Release the kill switch and resume all autonomous operations."""
+    result = kill_switch.stand_down(actor="api", pin=request.pin if request else None)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed"))
+    return result
+
+
+@app.get("/api/v1/killswitch/ledger")
+async def get_killswitch_ledger():
+    """Get immutable kill switch audit ledger entries."""
+    return {"ledger": kill_switch.activation_history}
+
+
+# ---- Threat Intel NLP ----
+@app.get("/api/v1/nlp/status")
+async def get_nlp_status():
+    """Get threat NLP engine status."""
+    return threat_nlp.get_status()
+
+
+@app.post("/api/v1/nlp/analyze")
+async def analyze_threat_text(request: NLPAnalysisRequest):
+    """Run full NLP pipeline: IOC extraction, CVSS estimate, MITRE mapping."""
+    analysis = threat_nlp.analyze(request.text)
+    return {"analysis": analysis}
+
+
+@app.post("/api/v1/nlp/iocs")
+async def extract_iocs_only(request: NLPAnalysisRequest):
+    """Extract only indicators of compromise from raw intel text."""
+    return {"iocs": threat_nlp.extract_iocs(request.text)}
+
+
+# ---- Incident Correlation Engine ----
+@app.get("/api/v1/incidents/stats")
+async def get_incident_stats():
+    """Get correlation engine statistics."""
+    return incident_correlator.get_stats()
+
+
+@app.post("/api/v1/incidents/ingest")
+async def ingest_security_event(request: CorrelateEventRequest):
+    """Ingest a raw security event and receive its incident correlation."""
+    details = request.details or {}
+    if request.source_ip:
+        details["source_ip"] = request.source_ip
+    if request.file_path:
+        details["file_path"] = request.file_path
+    if request.process:
+        details["process"] = request.process
+    result = incident_correlator.ingest(request.event_type, details)
+    if not result.get("accepted"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Rejected"))
+    return result
+
+
+@app.get("/api/v1/incidents")
+async def list_incidents(status: Optional[str] = None, limit: int = 50):
+    """List correlated incidents ranked by attack-chain score."""
+    return {"incidents": incident_correlator.get_incidents(status, limit)}
+
+
+@app.get("/api/v1/incidents/{incident_id}")
+async def get_incident_detail(incident_id: int):
+    """Get one incident with full narrative timeline."""
+    inc = incident_correlator.get_incident(incident_id)
+    if not inc:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    view = {k: v for k, v in inc.items() if k != "events"}
+    return view
+
+
+@app.post("/api/v1/incidents/{incident_id}/close")
+async def close_incident(incident_id: int, resolution: str = "manual"):
+    """Manually close an incident."""
+    result = incident_correlator.close(incident_id, resolution)
+    if not result.get("success"):
+        raise HTTPException(status_code=404, detail=result.get("error", "Not found"))
+    return result
 
 
 @app.get("/manifest.json")

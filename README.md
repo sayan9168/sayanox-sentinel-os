@@ -31,6 +31,47 @@ Unlike traditional monitoring tools that simply alert you *after* an incident, S
 
 ---
 
+## 🔥 Advanced Phase 5 Features (Fear-Inducing Edition)
+
+Phase 5 adds military-grade autonomous defense modules that go far beyond typical dashboards:
+
+### 💀 Ransomware Canary Guardian
+Plants cryptographic **honeypot canary files** across protected directories and runs a real-time watchdog combining four detection layers:
+*   **Canary Tripwire** — any modification/deletion of a `.sayanox_canary.dat` file is an instant critical alert.
+*   **Shannon Entropy Analysis** — freshly-written files are scanned for near-maximal byte entropy (>0.95), the fingerprint of encrypted payloads.
+*   **Encryption Storm Detection** — per-process file-modification velocity tracking; 50+ unique files rewritten in 10 seconds triggers automatic lockdown.
+*   **Extension Sweep** — mass-renames to known ransomware extensions (`.locked`, `.crypt`, `.wcry`, ...) are flagged immediately.
+
+On confirmed detection it executes an autonomous kill-chain: evidence snapshot → lockdown flag → incident correlation → firewall escalation. Includes a `simulate_storm()` red-team drill API.
+
+### 🚨 AI Kill Switch (Tiered Panic Button)
+A hardware-inspired emergency stop for the entire autonomous stack with a 4-level degradation ladder:
+
+| Level | Action | Effect |
+| :--- | :--- | :--- |
+| L1 | `PAUSE_WORKERS` | Stop FIM, sniffer, honeypot background jobs |
+| L2 | `NETWORK_ISOLATE` | Firewall-block all non-loopback traffic |
+| L3 | `HALT_PROCESSES` | Terminate automation processes |
+| L4 | `FULL_FREEZE` | Disable every remediation rule (safe mode) |
+
+L2+ activation requires a **salted-hash PIN** (dual-key protection so a stolen viewer token can't brick the machine). Every activation, rejection and stand-down is written to an **immutable SQLite audit ledger** for post-incident forensics.
+
+### 🧬 Threat Intelligence NLP Engine
+Pure-Python (zero external LLM dependency) intel analytics pipeline:
+*   **IOC Extraction** — CVE IDs, IPv4, URLs, domains, SHA-256 hashes, emails, and named threat actors (APTxx, Lazarus, LockBit...).
+*   **CVSS Estimation** — heuristic severity scoring from exploit keywords ("wormable", "RCE", "in the wild").
+*   **MITRE ATT&CK Mapping** — curated keyword taxonomy maps raw text to techniques (T1566 Phishing, T1486 Data Encrypted for Impact, ...).
+*   **TF-IDF Deduplication** — cosine-similarity clustering collapses duplicate intel feeds automatically.
+
+### 🔗 Incident Correlation Engine
+Fuses isolated signals (honeypot hits, FIM violations, ML anomalies, canary trips) into high-level **incidents** using sliding-window attack-chain analysis:
+*   Events correlate by source IP, file path prefix, or process name.
+*   Kill-chain scoring escalates severity as incidents progress RECON → INITIAL ACCESS → EXECUTION → PERSISTENCE → EXFILTRATION → IMPACT.
+*   Bayesian log-odds confidence per incident + auto-generated SOC narrative timelines.
+*   Incidents auto-close after a configurable quiet TTL.
+
+---
+
 ## 🚀 Advanced Phase 4 Features
 
 Sayanox Sentinel OS distinguishes itself with cutting-edge modules designed for modern threat landscapes:
@@ -129,6 +170,14 @@ Sayanox exposes a robust RESTful API and WebSocket streams for integration.
 | `WS` | `/ws/anomaly` | Receive real-time ML anomaly alerts. |
 | `GET` | `/scan/vulnerability` | Trigger an Nmap scan on a target subnet. |
 | `POST` | `/auth/login` | Authenticate and retrieve JWT access token. |
+| `GET` | `/api/v1/ransomware/status` | Ransomware canary guardian health & stats. |
+| `POST` | `/api/v1/ransomware/watch` | Protect a directory (plants canary files). |
+| `POST` | `/api/v1/ransomware/sweep` | Force an immediate entropy/canary sweep. |
+| `POST` | `/api/v1/killswitch/activate` | Engage the tiered AI kill switch (PIN-gated). |
+| `GET` | `/api/v1/killswitch/ledger` | Immutable kill-switch audit trail. |
+| `POST` | `/api/v1/nlp/analyze` | IOC extraction + CVSS estimate + MITRE mapping. |
+| `POST` | `/api/v1/incidents/ingest` | Fuse a raw security event into an incident. |
+| `GET` | `/api/v1/incidents` | Ranked incidents with kill-chain narratives. |
 
 ---
 

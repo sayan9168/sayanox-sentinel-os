@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { useState, useEffect } from 'react';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { 
   Activity, 
   Shield, 
@@ -55,7 +55,7 @@ function App() {
   const [threats, setThreats] = useState<ThreatAlert[]>([]);
   const [mcpResults, setMcpResults] = useState<MCPToolResult | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'threats' | 'tools'>('dashboard');
 
   // WebSocket connection for real-time metrics

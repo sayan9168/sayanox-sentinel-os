@@ -1,0 +1,52 @@
+name: ⚛️ Frontend CI (React + Vite)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "ai-security-dashboard/frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Type-check, Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
+          cache-dependency-path: ai-security-dashboard/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ai-security-dashboard/frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit tests (vitest run)
+        working-directory: ai-security-dashboard/frontend
+        run: npm run test:run --if-present
+
+      - name: Production build (tsc && vite build)
+        working-directory: ai-security-dashboard/frontend
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: ai-security-dashboard/frontend/dist
+          retention-days: 7
