@@ -6,10 +6,75 @@ Real-time metrics · Web terminal · ML anomaly detection · FIM · Firewall · 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![Stack](https://img.shields.io/badge/Stack-FastAPI%20%2B%20React-green)](#)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![security](https://img.shields.io/badge/topic-security-red)](#)
+[![homelab](https://img.shields.io/badge/topic-homelab-blue)](#)
+[![monitoring](https://img.shields.io/badge/topic-monitoring-green)](#)
+[![honeypot](https://img.shields.io/badge/topic-honeypot-orange)](#)
+
+<p align="center">
+  <img src="docs/banner.svg" alt="Sayanox Sentinel — Security Operations Suite" width="100%">
+</p>
 
 > **Note on the name:** This is **not** a from-scratch operating system kernel.  
-> It is a **security operations suite** that monitors and controls a host PC/server (metrics, terminal, firewall, FIM, honeypots, anomaly detection).
+> It is a **security operations suite** that monitors and controls a host PC/server.
+
+---
+
+## 📂 Where is the app? (start here)
+
+**All runnable code lives in one folder:**
+
+| Path | What it is |
+|------|------------|
+| **[`ai-security-dashboard/`](ai-security-dashboard/)** | ✅ **Main application** — backend + frontend + Docker |
+| [`ai-security-dashboard/backend/`](ai-security-dashboard/backend/) | FastAPI API, modules, ML, honeypot, FIM… |
+| [`ai-security-dashboard/frontend/`](ai-security-dashboard/frontend/) | React (Vite) dashboard UI |
+| [`ai-security-dashboard/docker-compose.yml`](ai-security-dashboard/docker-compose.yml) | One-command local stack |
+| [`ai-security-dashboard/README.md`](ai-security-dashboard/README.md) | Full module & API docs |
+
+```bash
+# Clone → enter the app folder → run
+git clone https://github.com/sayan9168/sayanox-sentinel-os.git
+cd sayanox-sentinel-os/ai-security-dashboard
+docker compose up --build
+```
+
+Then open:
+
+- **Dashboard:** http://localhost:3000  
+- **API docs:** http://localhost:8000/docs  
+
+---
+
+## 📸 Screenshots / demo
+
+Banner above ships with the repo. **Product screenshots** go in [`docs/screenshots/`](docs/screenshots/) — after you capture them, they show here:
+
+<!-- Uncomment after adding real files:
+![Dashboard](docs/screenshots/dashboard.png)
+![Web terminal](docs/screenshots/terminal.png)
+![Demo GIF](docs/screenshots/demo.gif)
+-->
+
+**How to add (2 minutes):**
+
+1. Run the stack (`cd ai-security-dashboard && docker compose up --build`)
+2. Screenshot dashboard / terminal / honeypot panel
+3. Save as `docs/screenshots/dashboard.png` (and optional `demo.gif`)
+4. Uncomment the image lines above and push
+
+See [`docs/screenshots/README.md`](docs/screenshots/README.md).
+
+---
+
+## Topics (GitHub Discoverability)
+
+Recommended repository topics (set in GitHub UI → **About** → ⚙ → Topics):
+
+`fastapi` · `security` · `homelab` · `monitoring` · `honeypot` · `python` · `react` · `docker` · `anomaly-detection` · `fim`
+
+*(MCP cannot set topics automatically — pin them once in the repo settings.)*
 
 ---
 
@@ -35,46 +100,21 @@ Real-time metrics · Web terminal · ML anomaly detection · FIM · Firewall · 
 
 ```text
 sayanox-sentinel-os/
-├── README.md
+├── README.md                      ← you are here
+├── docs/
+│   ├── banner.svg                 ← README banner
+│   └── screenshots/               ← drop dashboard.png / demo.gif here
 ├── .github/workflows/
-└── ai-security-dashboard/          ← main application
-    ├── backend/                     FastAPI + security modules
-    │   ├── main.py
-    │   ├── anomaly/
-    │   ├── auth/
-    │   ├── fim/
-    │   ├── firewall/
-    │   ├── honeypot/
-    │   ├── network/
-    │   ├── terminal/
-    │   ├── remediation/
-    │   └── …
-    ├── frontend/                    React (Vite) dashboard
-    ├── database/
+└── ai-security-dashboard/        ★ MAIN APP — always start here
+    ├── backend/                   FastAPI + security modules
+    ├── frontend/                  React (Vite) dashboard
     ├── docker-compose.yml
-    └── README.md                    Detailed app docs
+    └── README.md                  Detailed app docs
 ```
 
 ---
 
-## Quick start
-
-```bash
-git clone https://github.com/sayan9168/sayanox-sentinel-os.git
-cd sayanox-sentinel-os/ai-security-dashboard
-
-# Recommended: Docker
-docker compose up --build
-
-# Or run backend + frontend separately (see ai-security-dashboard/README.md)
-```
-
-Typical local endpoints:
-
-- Frontend: `http://localhost:3000`
-- API docs: `http://localhost:8000/docs`
-
-### Host dependencies (for network modules)
+## Host dependencies (network modules)
 
 ```bash
 # Ubuntu/Debian
@@ -100,16 +140,6 @@ sudo apt-get install -y libpcap-dev nmap
 - Run only on machines **you own** or are **explicitly authorized** to manage.
 - Firewall bans, honeypots, and packet capture can affect networks — use carefully.
 - Treat JWT secrets and webhook URLs as sensitive; never commit real `.env` values.
-
----
-
-## Status (honest)
-
-- **Strengths:** Broad module coverage, real backend structure, Docker path, security-ops focus.
-- **Gaps for star growth:** Root README previously oversold “OS” / “production-ready”; nested app folder can confuse newcomers; needs screenshots, short demo GIF, and pinned topics on GitHub.
-- Best audience: home-lab admins, security students, people who want a self-hosted SOC-lite dashboard.
-
-More detail: [`ai-security-dashboard/README.md`](ai-security-dashboard/README.md)
 
 ---
 
